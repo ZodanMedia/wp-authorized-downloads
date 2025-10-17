@@ -3,8 +3,8 @@ Contributors: zodannl, martenmoolenaar
 Tags: downloads, files, authorization, protected download
 Requires at least: 5.5
 Tested up to: 6.8
-Version: 1.1.1
-Stable tag: 1.1.1
+Version: 1.2.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -44,11 +44,14 @@ No. The plugin will manage the `.htaccess` rules for you when you save settings.
 
 
 == Changelog ==
+= 1.2.0 =
+* Added default Allowed roles to download files
+* Added file-specific Allowed roles to the media file meta-box
+
 = 1.1.1 =
 * Added settings page for specifying protected file types.
 * Improved security: uses WP_Filesystem for file reads.
 * Added caching to database lookups for performance.
-
 
 = 1.0.0 =
 * Initial release with meta box and basic rewrite rules.

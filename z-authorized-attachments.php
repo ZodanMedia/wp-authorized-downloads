@@ -7,8 +7,8 @@
  * Requires at least: 5.5
  * Tested up to: 6.8
  * Description: Adds an "Authorized only" meta field to attachments (visible in attachment edit screen and media modal) and manages a .htaccess rewrite section.
- * Version: 1.1.1
- * Stable Tag: 1.1.1
+ * Version: 1.2.0
+ * Stable Tag: 1.2.0
  * Author: Zodan (edited by ChatGPT)
  * Text Domain: z-authorized-attachments
  * License: GPLv2 or later
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Z_Authorized_Attachments {
 
     protected $plugin_name = 'z-authorized-attachments';
-    protected $version = '1.1.1';
+    protected $version = '1.2.0';
     const HTACCESS_MARKER = 'Z Authorized Attachments';
     const OPTION_KEY = 'z_auth_att_options';
     const PROTECTED_PAGE_SLUG = 'protected-downloads';
@@ -62,6 +62,7 @@ class Z_Authorized_Attachments {
         register_setting( self::OPTION_KEY, self::OPTION_KEY, array( $this, 'sanitize_options' ) );
         add_settings_section( 'main_section', __( 'General Settings', 'z-authorized-attachments' ), '__return_false', self::OPTION_KEY );
         add_settings_field( 'filetypes', __( 'Protected File Types (comma-separated)', 'z-authorized-attachments' ), array( $this, 'render_filetypes_field' ), self::OPTION_KEY, 'main_section' );
+        add_settings_field( 'default_roles', __( 'Default Allowed Roles', 'z-authorized-attachments' ), array( $this, 'render_default_roles_field' ), self::OPTION_KEY, 'main_section' );
     }
 
 	public static function add_plugin_settings_link( $links ) {
@@ -77,9 +78,13 @@ class Z_Authorized_Attachments {
         $filetypes = isset( $options['filetypes'] ) ? sanitize_text_field( $options['filetypes'] ) : '';
         // normalize: remove spaces, lowercase
         $clean['filetypes'] = strtolower( preg_replace( '/\s+/', '', $filetypes ) );
-
         // Rewrite htaccess with new extensions (use WP_Filesystem checks inside)
         self::write_htaccess_section( self::generate_htaccess_rules( $clean['filetypes'] ) );
+        $clean['default_roles'] = array();
+        if ( isset( $options['default_roles'] ) && is_array( $options['default_roles'] ) ) {
+            $all_roles = array_keys( wp_roles()->roles );
+            $clean['default_roles'] = array_values( array_intersect( $options['default_roles'], $all_roles ) );
+        }
         return $clean;
     }
 
@@ -106,6 +111,27 @@ class Z_Authorized_Attachments {
         echo '<p class="description">' . esc_html__( 'Example: .pdf,.doc,.docx,.zip', 'z-authorized-attachments' ) . '</p>';
     }
 
+    public function render_default_roles_field() {
+        $options = get_option( self::OPTION_KEY, array() );
+        $saved_roles = isset( $options['default_roles'] ) ? (array) $options['default_roles'] : array();
+        global $wp_roles;
+        if ( empty( $wp_roles ) ) {
+            $wp_roles = new WP_Roles();
+        }
+        echo '<fieldset class="z-auth-roles">';
+        foreach ( $wp_roles->roles as $role_key => $role_data ) {
+            $checked = in_array( $role_key, $saved_roles, true ) ? 'checked' : '';
+            echo '<label>';
+            echo '<input type="checkbox" name="' . esc_attr( self::OPTION_KEY ) . '[default_roles][]" value="' . esc_attr( $role_key ) . '" ' . esc_attr( $checked ) . '> ';
+            echo esc_html( translate_user_role( $role_data['name'] ) );
+            echo '</label>';
+        }
+        echo '<p class="description">' . esc_html__( 'If no specific roles are set per file, only these roles will be allowed to download protected files.', 'z-authorized-attachments' ) . '</p>';
+        echo '</fieldset>';
+    }
+
+
+
     /** ---------------- META BOX ---------------- */
     public function setup_attachment_metaboxes() {
         add_meta_box( 'authorized_attachment_meta_box', __( 'Authorize', 'z-authorized-attachments' ), array( $this, 'display_authorized_attachment_meta_box' ), 'attachment', 'side', 'high' );
@@ -113,9 +139,31 @@ class Z_Authorized_Attachments {
 
     public function display_authorized_attachment_meta_box( $post ) {
         wp_nonce_field( $this->plugin_name . '_attachment_meta_box', $this->plugin_name . '_attachment_meta_box_nonce' );
-        $meta_key = $this->plugin_name . '_document_download_needs_auth';
-        $value = get_post_meta( $post->ID, $meta_key, true );
-        echo '<label><input type="checkbox" name="' . esc_attr( $meta_key ) . '" value="1" ' . checked( $value, 1, false ) . '> ' . esc_html__( 'Authorized only', 'z-authorized-attachments' ) . '</label>';
+        // $meta_key = $this->plugin_name . '_document_download_needs_auth';
+        // $value = get_post_meta( $post->ID, $meta_key, true );
+        // echo '<label><input type="checkbox" name="' . esc_attr( $meta_key ) . '" value="1" ' . checked( $value, 1, false ) . '> ' . esc_html__( 'Authorized only', 'z-authorized-attachments' ) . '</label>';
+        $meta_auth_key = $this->plugin_name . '_document_download_needs_auth';
+        $meta_roles_key = $this->plugin_name . '_authorized_roles';
+
+        $requires_auth = get_post_meta( $post->ID, $meta_auth_key, true );
+        $roles_allowed = (array) get_post_meta( $post->ID, $meta_roles_key, true );
+
+        echo '<p><label><input type="checkbox" name="' . esc_attr( $meta_auth_key ) . '" value="1" ' . checked( $requires_auth, 1, false ) . '> ';
+        echo esc_html__( 'Authorized only', 'z-authorized-attachments' ) . '</label></p>';
+
+        global $wp_roles;
+        if ( empty( $wp_roles ) ) {
+            $wp_roles = new WP_Roles();
+        }
+        echo '<div class="z-auth-roles">';
+        echo '<p><strong>' . esc_html__( 'Allow only these roles:', 'z-authorized-attachments' ) . '</strong></p>';
+        foreach ( $wp_roles->roles as $role_key => $role_data ) {
+            $checked = in_array( $role_key, $roles_allowed, true ) ? 'checked' : '';
+            echo '<label>';
+            echo '<input type="checkbox" name="' . esc_attr( $meta_roles_key ) . '[]" value="' . esc_attr( $role_key ) . '" ' . esc_attr( $checked ) . '> ' . esc_html( translate_user_role( $role_data['name'] ) );
+            echo '</label>';
+        }
+        echo '</div>';
     }
 
     public function save_attachment_meta_box_data( $post_id, $post ) {
@@ -141,32 +189,80 @@ class Z_Authorized_Attachments {
             return;
         }
 
-        $meta_key = $this->plugin_name . '_document_download_needs_auth';
-        if ( isset( $_POST[ $meta_key ] ) ) {
-            update_post_meta( $post_id, $meta_key, 1 );
+        $meta_auth_key = $this->plugin_name . '_document_download_needs_auth';
+        if ( isset( $_POST[ $meta_auth_key ] ) ) {
+            update_post_meta( $post_id, $meta_auth_key, 1 );
         } else {
-            delete_post_meta( $post_id, $meta_key );
+            delete_post_meta( $post_id, $meta_auth_key );
         }
+
+        $meta_roles_key = $this->plugin_name . '_authorized_roles';
+        if ( isset( $_POST[ $meta_roles_key ] ) && is_array( $_POST[ $meta_roles_key ] ) ) {
+            $roles = array_map( 'sanitize_text_field', wp_unslash( $_POST[ $meta_roles_key ] ) );
+            update_post_meta( $post_id, $meta_roles_key, $roles );
+        } else {
+            delete_post_meta( $post_id, $meta_roles_key );
+        }
+
     }
 
     public function add_field_to_media_modal( $form_fields, $post ) {
-        $meta_key = $this->plugin_name . '_document_download_needs_auth';
-        $value = get_post_meta( $post->ID, $meta_key, true );
-        $form_fields[ $meta_key ] = array(
+        $meta_auth_key  = $this->plugin_name . '_document_download_needs_auth';
+        $meta_roles_key = $this->plugin_name . '_authorized_roles';
+
+        $requires_auth  = get_post_meta( $post->ID, $meta_auth_key, true );
+        $roles_allowed  = (array) get_post_meta( $post->ID, $meta_roles_key, true );
+
+        // Checkbox voor 'Authorized only'
+        $html = '<label><input type="checkbox" name="attachments[' . (int) $post->ID . '][' . esc_attr( $meta_auth_key ) . ']" value="1" ' . checked( $requires_auth, 1, false ) . ' /> ';
+        $html .= esc_html__( 'Download requires login', 'z-authorized-attachments' ) . '</label>';
+
+        // Rollenlijst
+        global $wp_roles;
+        if ( empty( $wp_roles ) ) {
+            $wp_roles = new WP_Roles();
+        }
+
+        $html .= '<div class="z-auth-roles">';
+        $html .= '<strong>' . esc_html__( 'Allow only these roles:', 'z-authorized-attachments' ) . '</strong>';
+        foreach ( $wp_roles->roles as $role_key => $role_data ) {
+            $checked = in_array( $role_key, $roles_allowed, true ) ? 'checked' : '';
+            $html .= '<label>';
+            $html .= '<input type="checkbox" name="attachments[' . (int) $post->ID . '][' . esc_attr( $meta_roles_key ) . '][]" value="' . esc_attr( $role_key ) . '" ' . $checked . '> ';
+            $html .= esc_html( translate_user_role( $role_data['name'] ) );
+            $html .= '</label>';
+        }
+        $html .= '</div>';
+
+        // Voeg het veld toe aan de Media modal
+        $form_fields[ $meta_auth_key ] = array(
             'label' => __( 'Authorized only', 'z-authorized-attachments' ),
             'input' => 'html',
-            'html'  => '<input type="checkbox" name="attachments[' . (int) $post->ID . '][' . esc_attr( $meta_key ) . ']" value="1" ' . checked( $value, 1, false ) . ' /> ('.__( 'Download requires login', 'z-authorized-attachments' ).')',
+            'html'  => $html,
         );
+
         return $form_fields;
     }
 
     public function save_field_from_media_modal( $post, $attachment ) {
-        $meta_key = $this->plugin_name . '_document_download_needs_auth';
-        if ( isset( $attachment[ $meta_key ] ) ) {
-            update_post_meta( $post['ID'], $meta_key, 1 );
+        $meta_auth_key  = $this->plugin_name . '_document_download_needs_auth';
+        $meta_roles_key = $this->plugin_name . '_authorized_roles';
+
+        // Sla 'Authorized only' op
+        if ( isset( $attachment[ $meta_auth_key ] ) ) {
+            update_post_meta( $post['ID'], $meta_auth_key, 1 );
         } else {
-            delete_post_meta( $post['ID'], $meta_key );
+            delete_post_meta( $post['ID'], $meta_auth_key );
         }
+
+        // Sla rollen op
+        if ( isset( $attachment[ $meta_roles_key ] ) && is_array( $attachment[ $meta_roles_key ] ) ) {
+            $roles = array_map( 'sanitize_text_field', wp_unslash( $attachment[ $meta_roles_key ] ) );
+            update_post_meta( $post['ID'], $meta_roles_key, $roles );
+        } else {
+            delete_post_meta( $post['ID'], $meta_roles_key );
+        }
+
         return $post;
     }
 
@@ -192,10 +288,34 @@ class Z_Authorized_Attachments {
         $meta_key = $this->plugin_name . '_document_download_needs_auth';
         $requires_auth = get_post_meta( $attachment->ID, $meta_key, true );
 
-        if ( $requires_auth && ! is_user_logged_in() ) {
-            auth_redirect();
-            exit;
+if ( $requires_auth ) {
+    if ( ! is_user_logged_in() ) {
+        auth_redirect();
+        exit;
+    }
+
+    $meta_roles_key = $this->plugin_name . '_authorized_roles';
+    $allowed_roles = (array) get_post_meta( $attachment->ID, $meta_roles_key, true );
+
+    if ( empty( $allowed_roles ) ) {
+        $options = get_option( self::OPTION_KEY, array() );
+        $allowed_roles = isset( $options['default_roles'] ) ? (array) $options['default_roles'] : array();
+    }
+
+    if ( ! empty( $allowed_roles ) ) {
+        $user = wp_get_current_user();
+        $user_roles = (array) $user->roles;
+        $intersection = array_intersect( $user_roles, $allowed_roles );
+
+        if ( empty( $intersection ) ) {
+            wp_die(
+                esc_html__( 'You do not have permission to download this file.', 'z-authorized-attachments' ),
+                esc_html__( 'Access Denied', 'z-authorized-attachments' ),
+                array( 'response' => 403 )
+            );
         }
+    }
+}
 
         $filepath = get_attached_file( $attachment->ID );
 

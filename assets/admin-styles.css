@@ -19,7 +19,24 @@
 .compat-field-z-authorized-attachments_document_download_needs_auth input {
     vertical-align: bottom;
 }
-
+.media-modal .compat-item .z-auth-roles {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 6px;
+    margin-top: 4px;
+    max-height: 140px;
+    overflow-y: auto;
+    background: #fafafa;
+}
+.z-auth-roles strong {
+    display: block;
+    margin-bottom: 4px;
+}
+.form-table td fieldset.z-auth-roles label,
+.z-auth-roles label {
+    display: block;
+    line-height: 1.4;
+}
 .zThanks {
     position: absolute;
     display: flex;

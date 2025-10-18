@@ -1,4 +1,4 @@
-=== Z Authorized Attachments ===
+=== Z Authorized Downloads ===
 Contributors: zodannl, martenmoolenaar
 Tags: downloads, files, authorization, protected download
 Requires at least: 5.5
@@ -23,9 +23,9 @@ Adds an "Authorized only" meta field to attachments (visible in attachment edit 
 
 
 == Installation ==
-1. Upload the plugin files to `/wp-content/plugins/z-authorized-attachments/` or install via the Plugins screen.
+1. Upload the plugin files to `/wp-content/plugins/z-authorized-downloads/` or install via the Plugins screen.
 2. Activate the plugin through the 'Plugins' screen.
-3. Go to **Settings → Authorized Attachments** to set which file types should be protected.
+3. Go to **Settings → Authorized Downloads** to set which file types should be protected.
 4. Mark attachments as "Authorized only" in the Media Library to restrict access.
 
 
@@ -93,13 +93,13 @@ This plugin is licensed under GPLv2 or later.
 = Install the plugin from within WordPress =
 
 1. Visit the plugins page within your dashboard and select ‘Add New’;
-1. Search for ‘Z Authorized Attachments’;
+1. Search for ‘Z Authorized Downloads’;
 1. Activate the plugin from your Plugins page;
 1. Go to ‘after activation’ below.
 
 = Install manually =
 
-1. Unzip the Z Authorized Attachments zip file
+1. Unzip the Z Authorized Downloads zip file
 2. Upload the unzipped folder to the /wp-content/plugins/ directory;
 3. Activate the plugin through the ‘Plugins’ menu in WordPress;
 4. Go to ‘after activation’ below.

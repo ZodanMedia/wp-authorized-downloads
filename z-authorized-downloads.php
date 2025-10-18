@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: Z Authorized Attachments
+ * Plugin Name: Z Authorized Downloads
  * Contributors: zodannl, martenmoolenaar
- * Plugin URI: https://plugins.zodan.nl/wordpress-authorized-attachments
+ * Plugin URI: https://plugins.zodan.nl/wordpress-authorized-downloads
  * Tags: downloads, files, authorization, protected download
  * Requires at least: 5.5
  * Tested up to: 6.8
@@ -10,7 +10,7 @@
  * Version: 1.2.0
  * Stable Tag: 1.2.0
  * Author: Zodan (edited by ChatGPT)
- * Text Domain: z-authorized-attachments
+ * Text Domain: z-authorized-downloads
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  */
@@ -19,14 +19,14 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class Z_Authorized_Attachments {
+class z_authorized_downloads {
 
-    protected $plugin_name = 'z-authorized-attachments';
+    protected $plugin_name = 'z-authorized-downloads';
     protected $version = '1.2.0';
-    const HTACCESS_MARKER = 'Z Authorized Attachments';
+    const HTACCESS_MARKER = 'Z Authorized Downloads';
     const OPTION_KEY = 'z_auth_att_options';
     const PROTECTED_PAGE_SLUG = 'protected-downloads';
-    const CACHE_GROUP = 'z_authorized_attachments';
+    const CACHE_GROUP = 'z_authorized_downloads';
 
     public function __construct() {
         // Meta boxes + media modal
@@ -50,8 +50,8 @@ class Z_Authorized_Attachments {
     /** ---------------- ADMIN SETTINGS ---------------- */
     public function register_settings_page() {
         add_options_page(
-            __( 'Authorized Attachments', 'z-authorized-attachments' ),
-            __( 'Authorized Attachments', 'z-authorized-attachments' ),
+            __( 'Authorized Downloads', 'z-authorized-downloads' ),
+            __( 'Authorized Downloads', 'z-authorized-downloads' ),
             'manage_options',
             $this->plugin_name,
             array( $this, 'render_settings_page' )
@@ -60,13 +60,13 @@ class Z_Authorized_Attachments {
 
     public function register_settings() {
         register_setting( self::OPTION_KEY, self::OPTION_KEY, array( $this, 'sanitize_options' ) );
-        add_settings_section( 'main_section', __( 'General Settings', 'z-authorized-attachments' ), '__return_false', self::OPTION_KEY );
-        add_settings_field( 'filetypes', __( 'Protected File Types (comma-separated)', 'z-authorized-attachments' ), array( $this, 'render_filetypes_field' ), self::OPTION_KEY, 'main_section' );
-        add_settings_field( 'default_roles', __( 'Default Allowed Roles', 'z-authorized-attachments' ), array( $this, 'render_default_roles_field' ), self::OPTION_KEY, 'main_section' );
+        add_settings_section( 'main_section', __( 'General Settings', 'z-authorized-downloads' ), '__return_false', self::OPTION_KEY );
+        add_settings_field( 'filetypes', __( 'Protected File Types (comma-separated)', 'z-authorized-downloads' ), array( $this, 'render_filetypes_field' ), self::OPTION_KEY, 'main_section' );
+        add_settings_field( 'default_roles', __( 'Default Allowed Roles', 'z-authorized-downloads' ), array( $this, 'render_default_roles_field' ), self::OPTION_KEY, 'main_section' );
     }
 
 	public static function add_plugin_settings_link( $links ) {
-		$settings_link = '<a href="options-general.php?page=z-authorized-attachments">' . __( 'Settings','z-authorized-attachments' ) . '</a>';
+		$settings_link = '<a href="options-general.php?page=z-authorized-downloads">' . __( 'Settings','z-authorized-downloads' ) . '</a>';
 		array_unshift( $links, $settings_link );
 		return $links;
 	}
@@ -92,7 +92,7 @@ class Z_Authorized_Attachments {
         add_filter('admin_footer_text', array($this, 'z_admin_footer_print_thankyou'), 900);
 
         echo '<div class="wrap">';
-        echo '<h1>' . esc_html__( 'Authorized Attachments Settings', 'z-authorized-attachments' ) . '</h1>';
+        echo '<h1>' . esc_html__( 'Authorized Downloads Settings', 'z-authorized-downloads' ) . '</h1>';
         echo '<form method="post" action="options.php">';
         settings_fields( self::OPTION_KEY );
         do_settings_sections( self::OPTION_KEY );
@@ -102,13 +102,13 @@ class Z_Authorized_Attachments {
 
     public function admins_css($hook) {
         $plugins_url = plugin_dir_url( __FILE__ );
-        wp_enqueue_style( 'zauthorizedattachments-admin-css', $plugins_url . 'assets/admin-styles.css' , array(), $this->version );
+        wp_enqueue_style( 'zauthorizeddownloads-admin-css', $plugins_url . 'assets/admin-styles.css' , array(), $this->version );
     }
 
     public function render_filetypes_field() {
         $options = get_option( self::OPTION_KEY, array( 'filetypes' => '.pdf,.docx' ) );
         echo '<input type="text" name="' . esc_attr( self::OPTION_KEY ) . '[filetypes]" value="' . esc_attr( $options['filetypes'] ) . '" class="regular-text">';
-        echo '<p class="description">' . esc_html__( 'Example: .pdf,.doc,.docx,.zip', 'z-authorized-attachments' ) . '</p>';
+        echo '<p class="description">' . esc_html__( 'Example: .pdf,.doc,.docx,.zip', 'z-authorized-downloads' ) . '</p>';
     }
 
     public function render_default_roles_field() {
@@ -126,7 +126,7 @@ class Z_Authorized_Attachments {
             echo esc_html( translate_user_role( $role_data['name'] ) );
             echo '</label>';
         }
-        echo '<p class="description">' . esc_html__( 'If no specific roles are set per file, only these roles will be allowed to download protected files.', 'z-authorized-attachments' ) . '</p>';
+        echo '<p class="description">' . esc_html__( 'If no specific roles are set per file, only these roles will be allowed to download protected files.', 'z-authorized-downloads' ) . '</p>';
         echo '</fieldset>';
     }
 
@@ -134,14 +134,14 @@ class Z_Authorized_Attachments {
 
     /** ---------------- META BOX ---------------- */
     public function setup_attachment_metaboxes() {
-        add_meta_box( 'authorized_attachment_meta_box', __( 'Authorize', 'z-authorized-attachments' ), array( $this, 'display_authorized_attachment_meta_box' ), 'attachment', 'side', 'high' );
+        add_meta_box( 'authorized_attachment_meta_box', __( 'Authorize', 'z-authorized-downloads' ), array( $this, 'display_authorized_attachment_meta_box' ), 'attachment', 'side', 'high' );
     }
 
     public function display_authorized_attachment_meta_box( $post ) {
         wp_nonce_field( $this->plugin_name . '_attachment_meta_box', $this->plugin_name . '_attachment_meta_box_nonce' );
         // $meta_key = $this->plugin_name . '_document_download_needs_auth';
         // $value = get_post_meta( $post->ID, $meta_key, true );
-        // echo '<label><input type="checkbox" name="' . esc_attr( $meta_key ) . '" value="1" ' . checked( $value, 1, false ) . '> ' . esc_html__( 'Authorized only', 'z-authorized-attachments' ) . '</label>';
+        // echo '<label><input type="checkbox" name="' . esc_attr( $meta_key ) . '" value="1" ' . checked( $value, 1, false ) . '> ' . esc_html__( 'Authorized only', 'z-authorized-downloads' ) . '</label>';
         $meta_auth_key = $this->plugin_name . '_document_download_needs_auth';
         $meta_roles_key = $this->plugin_name . '_authorized_roles';
 
@@ -149,14 +149,14 @@ class Z_Authorized_Attachments {
         $roles_allowed = (array) get_post_meta( $post->ID, $meta_roles_key, true );
 
         echo '<p><label><input type="checkbox" name="' . esc_attr( $meta_auth_key ) . '" value="1" ' . checked( $requires_auth, 1, false ) . '> ';
-        echo esc_html__( 'Authorized only', 'z-authorized-attachments' ) . '</label></p>';
+        echo esc_html__( 'Authorized only', 'z-authorized-downloads' ) . '</label></p>';
 
         global $wp_roles;
         if ( empty( $wp_roles ) ) {
             $wp_roles = new WP_Roles();
         }
         echo '<div class="z-auth-roles">';
-        echo '<p><strong>' . esc_html__( 'Allow only these roles:', 'z-authorized-attachments' ) . '</strong></p>';
+        echo '<p><strong>' . esc_html__( 'Allow only these roles:', 'z-authorized-downloads' ) . '</strong></p>';
         foreach ( $wp_roles->roles as $role_key => $role_data ) {
             $checked = in_array( $role_key, $roles_allowed, true ) ? 'checked' : '';
             echo '<label>';
@@ -215,7 +215,7 @@ class Z_Authorized_Attachments {
 
         // Checkbox voor 'Authorized only'
         $html = '<label><input type="checkbox" name="attachments[' . (int) $post->ID . '][' . esc_attr( $meta_auth_key ) . ']" value="1" ' . checked( $requires_auth, 1, false ) . ' /> ';
-        $html .= esc_html__( 'Download requires login', 'z-authorized-attachments' ) . '</label>';
+        $html .= esc_html__( 'Download requires login', 'z-authorized-downloads' ) . '</label>';
 
         // Rollenlijst
         global $wp_roles;
@@ -224,7 +224,7 @@ class Z_Authorized_Attachments {
         }
 
         $html .= '<div class="z-auth-roles">';
-        $html .= '<strong>' . esc_html__( 'Allow only these roles:', 'z-authorized-attachments' ) . '</strong>';
+        $html .= '<strong>' . esc_html__( 'Allow only these roles:', 'z-authorized-downloads' ) . '</strong>';
         foreach ( $wp_roles->roles as $role_key => $role_data ) {
             $checked = in_array( $role_key, $roles_allowed, true ) ? 'checked' : '';
             $html .= '<label>';
@@ -236,7 +236,7 @@ class Z_Authorized_Attachments {
 
         // Voeg het veld toe aan de Media modal
         $form_fields[ $meta_auth_key ] = array(
-            'label' => __( 'Authorized only', 'z-authorized-attachments' ),
+            'label' => __( 'Authorized only', 'z-authorized-downloads' ),
             'input' => 'html',
             'html'  => $html,
         );
@@ -276,13 +276,13 @@ class Z_Authorized_Attachments {
         $file = isset( $_GET['file'] ) ? sanitize_file_name( wp_basename( sanitize_url( wp_unslash($_GET['file'] ) ) ) ): '';
         
         if ( ! $file ) {
-            wp_die( esc_html__( 'No file specified.', 'z-authorized-attachments' ), esc_html__( 'Error', 'z-authorized-attachments' ), array( 'response' => 403 ) );
+            wp_die( esc_html__( 'No file specified.', 'z-authorized-downloads' ), esc_html__( 'Error', 'z-authorized-downloads' ), array( 'response' => 403 ) );
         }
 
         $attachment = $this->get_attachment_by_filename( $file );
 
         if ( ! $attachment ) {
-            wp_die( esc_html__( 'File not found.', 'z-authorized-attachments' ), esc_html__( 'Error', 'z-authorized-attachments' ), array( 'response' => 404 ) );
+            wp_die( esc_html__( 'File not found.', 'z-authorized-downloads' ), esc_html__( 'Error', 'z-authorized-downloads' ), array( 'response' => 404 ) );
         }
 
         $meta_key = $this->plugin_name . '_document_download_needs_auth';
@@ -309,8 +309,8 @@ if ( $requires_auth ) {
 
         if ( empty( $intersection ) ) {
             wp_die(
-                esc_html__( 'You do not have permission to download this file.', 'z-authorized-attachments' ),
-                esc_html__( 'Access Denied', 'z-authorized-attachments' ),
+                esc_html__( 'You do not have permission to download this file.', 'z-authorized-downloads' ),
+                esc_html__( 'Access Denied', 'z-authorized-downloads' ),
                 array( 'response' => 403 )
             );
         }
@@ -327,16 +327,16 @@ if ( $requires_auth ) {
         global $wp_filesystem;
 
         if ( empty( $wp_filesystem ) || ! method_exists( $wp_filesystem, 'exists' ) ) {
-            wp_die( esc_html__( 'Filesystem API not available.', 'z-authorized-attachments' ), esc_html__( 'Error', 'z-authorized-attachments' ), array( 'response' => 500 ) );
+            wp_die( esc_html__( 'Filesystem API not available.', 'z-authorized-downloads' ), esc_html__( 'Error', 'z-authorized-downloads' ), array( 'response' => 500 ) );
         }
 
         if ( ! $wp_filesystem->exists( $filepath ) ) {
-            wp_die( esc_html__( 'File missing.', 'z-authorized-attachments' ), esc_html__( 'Error', 'z-authorized-attachments' ), array( 'response' => 404 ) );
+            wp_die( esc_html__( 'File missing.', 'z-authorized-downloads' ), esc_html__( 'Error', 'z-authorized-downloads' ), array( 'response' => 404 ) );
         }
 
         $file_contents = $wp_filesystem->get_contents( $filepath );
         if ( $file_contents === false ) {
-            wp_die( esc_html__( 'Cannot read file.', 'z-authorized-attachments' ), esc_html__( 'Error', 'z-authorized-attachments' ), array( 'response' => 500 ) );
+            wp_die( esc_html__( 'Cannot read file.', 'z-authorized-downloads' ), esc_html__( 'Error', 'z-authorized-downloads' ), array( 'response' => 500 ) );
         }
 
         // Correct headers for file download / inline display
@@ -419,7 +419,7 @@ if ( $requires_auth ) {
                 'post_name'    => self::PROTECTED_PAGE_SLUG,
                 'post_status'  => 'publish',
                 'post_type'    => 'page',
-                'post_content' => __( 'This page is used internally to serve protected downloads.', 'z-authorized-attachments' ),
+                'post_content' => __( 'This page is used internally to serve protected downloads.', 'z-authorized-downloads' ),
             ) );
         }
         $options = get_option( self::OPTION_KEY, array( 'filetypes' => '.pdf,.docx' ) );
@@ -473,9 +473,9 @@ if ( $requires_auth ) {
     // Print a thankyou notice
     public function z_admin_footer_print_thankyou( $data ) {
         $data = '<p class="zThanks"><a href="https://zodan.nl" target="_blank" rel="noreferrer">' .
-                    esc_html__('Made with', 'z-authorized-attachments') . 
+                    esc_html__('Made with', 'z-authorized-downloads') . 
                     '<svg id="heart" data-name="heart" xmlns="http://www.w3.org/2000/svg" width="745.2" height="657.6" version="1.1" viewBox="0 0 745.2 657.6"><path class="heart" d="M372,655.6c-2.8,0-5.5-1.3-7.2-3.6-.7-.9-71.9-95.4-159.9-157.6-11.7-8.3-23.8-16.3-36.5-24.8-60.7-40.5-123.6-82.3-152-151.2C0,278.9-1.4,217.6,12.6,158.6,28,93.5,59,44.6,97.8,24.5,125.3,10.2,158.1,2.4,190.2,2.4s.3,0,.4,0c34.7,0,66.5,9,92.2,25.8,22.4,14.6,70.3,78,89.2,103.7,18.9-25.7,66.8-89,89.2-103.7,25.7-16.8,57.6-25.7,92.2-25.8,32.3-.1,65.2,7.8,92.8,22.1h0c38.7,20.1,69.8,69,85.2,134.1,14,59.1,12.5,120.3-3.8,159.8-28.5,69-91.3,110.8-152,151.2-12.8,8.5-24.8,16.5-36.5,24.8-88.1,62.1-159.2,156.6-159.9,157.6-1.7,2.3-4.4,3.6-7.2,3.6Z"></path></svg>' .
-                    esc_html__('by Zodan', 'z-authorized-attachments') .
+                    esc_html__('by Zodan', 'z-authorized-downloads') .
                 '</a></p>';
 
         return $data;
@@ -483,8 +483,8 @@ if ( $requires_auth ) {
 
 }
 
-$GLOBALS['z_authorized_attachments'] = new Z_Authorized_Attachments();
-register_activation_hook( __FILE__, array( 'Z_Authorized_Attachments', 'activate' ) );
-register_deactivation_hook( __FILE__, array( 'Z_Authorized_Attachments', 'deactivate' ) );
+$GLOBALS['z_authorized_downloads'] = new z_authorized_downloads();
+register_activation_hook( __FILE__, array( 'z_authorized_downloads', 'activate' ) );
+register_deactivation_hook( __FILE__, array( 'z_authorized_downloads', 'deactivate' ) );
 
 ?>

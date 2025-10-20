@@ -15,7 +15,6 @@
 #adminmenu .current a[href*="?page=z-authorized-downloads"]:before {
     opacity: 0.9;
 }
-
 .compat-field-z-authorized-downloads_document_download_needs_auth input {
     vertical-align: bottom;
 }
@@ -43,7 +42,6 @@
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-
 }
 .zThanks a {
     text-decoration: none;

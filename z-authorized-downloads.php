@@ -7,8 +7,8 @@
  * Requires at least: 5.5
  * Tested up to: 6.8
  * Description: Adds an "Authorized only" meta field to attachments (visible in attachment edit screen and media modal) and manages a .htaccess rewrite section.
- * Version: 1.2.0
- * Stable Tag: 1.2.0
+ * Version: 1.2.2
+ * Stable Tag: 1.2.2
  * Author: Zodan (edited by ChatGPT)
  * Text Domain: z-authorized-downloads
  * License: GPLv2 or later
@@ -19,10 +19,10 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class z_authorized_downloads {
+class Z_Authorized_Downloads {
 
     protected $plugin_name = 'z-authorized-downloads';
-    protected $version = '1.2.0';
+    protected $version = '1.2.2';
     const HTACCESS_MARKER = 'Z Authorized Downloads';
     const OPTION_KEY = 'z_auth_att_options';
     const PROTECTED_PAGE_SLUG = 'protected-downloads';
@@ -32,6 +32,8 @@ class z_authorized_downloads {
         // Meta boxes + media modal
         add_action( 'add_meta_boxes', array( $this, 'setup_attachment_metaboxes' ) );
         add_action( 'save_post_attachment', array( $this, 'save_attachment_meta_box_data' ), 10, 2 );
+        add_action( 'edit_attachment', array( $this, 'save_attachment_meta_box_data' ), 10, 1 ); // vang edit_attachment ook op
+
         add_filter( 'attachment_fields_to_edit', array( $this, 'add_field_to_media_modal' ), 10, 2 );
         add_filter( 'attachment_fields_to_save', array( $this, 'save_field_from_media_modal' ), 10, 2 );
 
@@ -132,114 +134,180 @@ class z_authorized_downloads {
 
 
 
-    /** ---------------- META BOX ---------------- */
-    public function setup_attachment_metaboxes() {
-        add_meta_box( 'authorized_attachment_meta_box', __( 'Authorize', 'z-authorized-downloads' ), array( $this, 'display_authorized_attachment_meta_box' ), 'attachment', 'side', 'high' );
-    }
 
-    public function display_authorized_attachment_meta_box( $post ) {
-        wp_nonce_field( $this->plugin_name . '_attachment_meta_box', $this->plugin_name . '_attachment_meta_box_nonce' );
-        // $meta_key = $this->plugin_name . '_document_download_needs_auth';
-        // $value = get_post_meta( $post->ID, $meta_key, true );
-        // echo '<label><input type="checkbox" name="' . esc_attr( $meta_key ) . '" value="1" ' . checked( $value, 1, false ) . '> ' . esc_html__( 'Authorized only', 'z-authorized-downloads' ) . '</label>';
-        $meta_auth_key = $this->plugin_name . '_document_download_needs_auth';
+
+    /** ---------------- FIELDS FOR META BOX AND MODAL ---------------- */
+    private function render_authorized_roles_ui( $post_id, $context = 'metabox' ) {
         $meta_roles_key = $this->plugin_name . '_authorized_roles';
-
-        $requires_auth = get_post_meta( $post->ID, $meta_auth_key, true );
-        $roles_allowed = (array) get_post_meta( $post->ID, $meta_roles_key, true );
-
-        echo '<p><label><input type="checkbox" name="' . esc_attr( $meta_auth_key ) . '" value="1" ' . checked( $requires_auth, 1, false ) . '> ';
-        echo esc_html__( 'Authorized only', 'z-authorized-downloads' ) . '</label></p>';
+        $roles_allowed  = (array) get_post_meta( $post_id, $meta_roles_key, true );
 
         global $wp_roles;
         if ( empty( $wp_roles ) ) {
             $wp_roles = new WP_Roles();
         }
-        echo '<div class="z-auth-roles">';
-        echo '<p><strong>' . esc_html__( 'Allow only these roles:', 'z-authorized-downloads' ) . '</strong></p>';
-        foreach ( $wp_roles->roles as $role_key => $role_data ) {
-            $checked = in_array( $role_key, $roles_allowed, true ) ? 'checked' : '';
-            echo '<label>';
-            echo '<input type="checkbox" name="' . esc_attr( $meta_roles_key ) . '[]" value="' . esc_attr( $role_key ) . '" ' . esc_attr( $checked ) . '> ' . esc_html( translate_user_role( $role_data['name'] ) );
-            echo '</label>';
-        }
-        echo '</div>';
+
+        // juiste prefix
+        $name_prefix = ( $context === 'modal' )
+            ? 'attachments[' . $post_id . '][' . $meta_roles_key . '][]'
+            : $meta_roles_key . '[]';
+
+        ob_start();
+        ?>
+        <div class="z-auth-roles">
+            <p><strong><?php esc_html_e( 'Allow only these roles:', 'z-authorized-downloads' ); ?></strong></p>
+            <?php foreach ( $wp_roles->roles as $role_key => $role_data ) : ?>
+                <label>
+                    <input type="checkbox" name="<?php echo esc_attr( $name_prefix ); ?>"
+                        value="<?php echo esc_attr( $role_key ); ?>"
+                        <?php checked( in_array( $role_key, $roles_allowed, true ) ); ?>>
+                    <?php echo esc_html( translate_user_role( $role_data['name'] ) ); ?>
+                </label>
+            <?php endforeach; ?>
+        </div>
+        <?php
+        return ob_get_clean();
     }
 
-    public function save_attachment_meta_box_data( $post_id, $post ) {
-        if ( $post->post_type !== 'attachment' ) {
+
+    private function render_needs_auth_ui( $post_id, $context = 'metabox' ) {
+        $meta_auth_key = $this->plugin_name . '_document_download_needs_auth';
+        $requires_auth = get_post_meta( $post_id, $meta_auth_key, true );
+
+        // bepaal de juiste name prefix
+        $name_prefix = ( $context === 'modal' )
+            ? 'attachments[' . $post_id . '][' . $meta_auth_key . ']'
+            : $meta_auth_key;
+
+        ob_start();
+        ?>
+        <p>
+            <label>
+                <input type="checkbox" name="<?php echo esc_attr( $name_prefix ); ?>" value="1"
+                    <?php checked( $requires_auth, 1 ); ?>>
+                <?php esc_html_e( 'Authorized only', 'z-authorized-downloads' ); ?>
+            </label>
+        </p>
+        <?php
+        return ob_get_clean();
+    }
+
+
+
+    /** ---------------- META BOX ---------------- */
+    public function setup_attachment_metaboxes() {
+        add_meta_box( 'authorized_downloads_meta_box', __( 'Authorize', 'z-authorized-downloads' ), array( $this, 'display_authorized_downloads_meta_box' ), 'attachment', 'side', 'high' );
+    }
+
+    public function display_authorized_downloads_meta_box( $post ) {
+        wp_nonce_field( $this->plugin_name . '_attachment_meta_box', $this->plugin_name . '_attachment_meta_box_nonce' );
+
+        echo $this->render_needs_auth_ui( $post->ID );
+        echo $this->render_authorized_roles_ui( $post->ID );
+
+    }
+
+
+    public function save_attachment_meta_box_data( $post_id ) {
+        // Let op: sommige hooks (save_post_*) geven 2 params; edit_attachment geeft 1 param.
+        // Zorg dat $post is beschikbaar als we 'm nodig hebben
+        $post = get_post( $post_id );
+
+        if ( ! $post || $post->post_type !== 'attachment' ) {
             return;
         }
 
         $nonce_key = $this->plugin_name . '_attachment_meta_box_nonce';
-        if ( ! isset( $_POST[ $nonce_key ] ) ) {
-            return;
-        }
-
-        $nonce = sanitize_text_field( wp_unslash( $_POST[ $nonce_key ] ) );
-        if ( ! wp_verify_nonce( $nonce, $this->plugin_name . '_attachment_meta_box' ) ) {
-            return;
-        }
-
-        if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-            return;
-        }
-
-        if ( ! current_user_can( 'edit_post', $post_id ) ) {
-            return;
-        }
-
         $meta_auth_key = $this->plugin_name . '_document_download_needs_auth';
-        if ( isset( $_POST[ $meta_auth_key ] ) ) {
-            update_post_meta( $post_id, $meta_auth_key, 1 );
-        } else {
-            delete_post_meta( $post_id, $meta_auth_key );
-        }
-
         $meta_roles_key = $this->plugin_name . '_authorized_roles';
-        if ( isset( $_POST[ $meta_roles_key ] ) && is_array( $_POST[ $meta_roles_key ] ) ) {
-            $roles = array_map( 'sanitize_text_field', wp_unslash( $_POST[ $meta_roles_key ] ) );
-            update_post_meta( $post_id, $meta_roles_key, $roles );
-        } else {
-            delete_post_meta( $post_id, $meta_roles_key );
+
+        // Als het een AJAX-update vanuit de media-library is, bevat WP vaak geen nonce uit onze meta-box.
+        // We detecteren AJAX en valideren via capability -> upload_files (of edit_post)
+        $is_ajax = defined( 'DOING_AJAX' ) && DOING_AJAX;
+
+        if ( ! $is_ajax ) {
+            // normale non-AJAX flow: nonce verplicht
+            if ( ! isset( $_POST[ $nonce_key ] ) ) {
+                return;
+            }
+            $nonce = sanitize_text_field( wp_unslash( $_POST[ $nonce_key ] ) );
+            if ( ! wp_verify_nonce( $nonce, $this->plugin_name . '_attachment_meta_box' ) ) {
+                return;
+            }
+            if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+                return;
+            }
+            if ( ! current_user_can( 'edit_post', $post_id ) ) {
+                return;
+            }
+
+            // Nu kunnen we veilig de normale $_POST velden uitlezen (zoals in jouw originele code)
+            if ( isset( $_POST[ $meta_auth_key ] ) ) {
+                update_post_meta( $post_id, $meta_auth_key, 1 );
+            } else {
+                delete_post_meta( $post_id, $meta_auth_key );
+            }
+
+            if ( isset( $_POST[ $meta_roles_key ] ) && is_array( $_POST[ $meta_roles_key ] ) ) {
+                $roles = array_map( 'sanitize_text_field', wp_unslash( $_POST[ $meta_roles_key ] ) );
+                update_post_meta( $post_id, $meta_roles_key, $roles );
+            } else {
+                delete_post_meta( $post_id, $meta_roles_key );
+            }
+
+            return;
         }
 
+        // ---- AJAX flow (media library / sidebar) ----
+        // WP stuurt in veel gevallen 'attachments' array: $_POST['attachments'][ID][...]
+        if ( isset( $_POST['attachments'] ) && is_array( $_POST['attachments'] ) ) {
+            $attachments = wp_unslash( $_POST['attachments'] );
+
+            if ( isset( $attachments[ $post_id ] ) && is_array( $attachments[ $post_id ] ) ) {
+                // capability check in plaats van nonce
+                if ( ! current_user_can( 'upload_files' ) && ! current_user_can( 'edit_post', $post_id ) ) {
+                    return;
+                }
+
+                $data = $attachments[ $post_id ];
+
+                // 'Authorized only' kan in AJAX payload alleen aanwezig zijn als we die velden
+                // hebben toegevoegd via attachment_fields_to_edit; probeer ze daarom ook uit $data
+                if ( isset( $data[ $meta_auth_key ] ) && $data[ $meta_auth_key ] ) {
+                    update_post_meta( $post_id, $meta_auth_key, 1 );
+                } else {
+                    delete_post_meta( $post_id, $meta_auth_key );
+                }
+
+                if ( isset( $data[ $meta_roles_key ] ) && is_array( $data[ $meta_roles_key ] ) ) {
+                    $roles = array_map( 'sanitize_text_field', $data[ $meta_roles_key ] );
+                    update_post_meta( $post_id, $meta_roles_key, $roles );
+                } else {
+                    // Als er geen rollen meegestuurd zijn, dan willen we niet per ongeluk wissen
+                    // tenzij het expliciet leeg is (keuze; aanpassen naar wens)
+                    if ( isset( $data[ $meta_roles_key ] ) ) {
+                        delete_post_meta( $post_id, $meta_roles_key );
+                    }
+                }
+            }
+        }
     }
 
+    /** ---------------- META MODAL ---------------- */
     public function add_field_to_media_modal( $form_fields, $post ) {
         $meta_auth_key  = $this->plugin_name . '_document_download_needs_auth';
         $meta_roles_key = $this->plugin_name . '_authorized_roles';
 
-        $requires_auth  = get_post_meta( $post->ID, $meta_auth_key, true );
-        $roles_allowed  = (array) get_post_meta( $post->ID, $meta_roles_key, true );
-
-        // Checkbox voor 'Authorized only'
-        $html = '<label><input type="checkbox" name="attachments[' . (int) $post->ID . '][' . esc_attr( $meta_auth_key ) . ']" value="1" ' . checked( $requires_auth, 1, false ) . ' /> ';
-        $html .= esc_html__( 'Download requires login', 'z-authorized-downloads' ) . '</label>';
-
-        // Rollenlijst
-        global $wp_roles;
-        if ( empty( $wp_roles ) ) {
-            $wp_roles = new WP_Roles();
-        }
-
-        $html .= '<div class="z-auth-roles">';
-        $html .= '<strong>' . esc_html__( 'Allow only these roles:', 'z-authorized-downloads' ) . '</strong>';
-        foreach ( $wp_roles->roles as $role_key => $role_data ) {
-            $checked = in_array( $role_key, $roles_allowed, true ) ? 'checked' : '';
-            $html .= '<label>';
-            $html .= '<input type="checkbox" name="attachments[' . (int) $post->ID . '][' . esc_attr( $meta_roles_key ) . '][]" value="' . esc_attr( $role_key ) . '" ' . $checked . '> ';
-            $html .= esc_html( translate_user_role( $role_data['name'] ) );
-            $html .= '</label>';
-        }
-        $html .= '</div>';
-
-        // Voeg het veld toe aan de Media modal
-        $form_fields[ $meta_auth_key ] = array(
+        $form_fields[ $meta_auth_key ] = [
             'label' => __( 'Authorized only', 'z-authorized-downloads' ),
             'input' => 'html',
-            'html'  => $html,
-        );
+            'html'  => $this->render_needs_auth_ui( $post->ID, 'modal' ),
+        ];
+
+        $form_fields[ $meta_roles_key ] = [
+            'label' => __( 'Authorized roles', 'z-authorized-downloads' ),
+            'input' => 'html',
+            'html'  => $this->render_authorized_roles_ui( $post->ID, 'modal'  ),
+        ];
 
         return $form_fields;
     }
@@ -358,9 +426,6 @@ if ( $requires_auth ) {
     public static function generate_htaccess_rules( $filetypes_csv ) {
         // $rules = array( '# BEGIN ' . self::HTACCESS_MARKER );
 
-        // <FilesMatch "\.(doc|docx|xls|xlsx|pdf)$">
-        // RedirectMatch 301 ^(.*) https://de-oude-maas.nl/protected-downloads/?file=$1
-        // </FilesMatch>
         $exts = array_filter( array_map( 'trim', explode( ',', $filetypes_csv ) ) );
         $exts = array_values( array_filter( array_map( function ( $ext ) {
             return ltrim( $ext, '.' );
@@ -483,8 +548,8 @@ if ( $requires_auth ) {
 
 }
 
-$GLOBALS['z_authorized_downloads'] = new z_authorized_downloads();
-register_activation_hook( __FILE__, array( 'z_authorized_downloads', 'activate' ) );
-register_deactivation_hook( __FILE__, array( 'z_authorized_downloads', 'deactivate' ) );
+$GLOBALS['z_authorized_downloads'] = new Z_Authorized_Downloads();
+register_activation_hook( __FILE__, array( 'Z_Authorized_Downloads', 'activate' ) );
+register_deactivation_hook( __FILE__, array( 'Z_Authorized_Downloads', 'deactivate' ) );
 
 ?>

@@ -7,8 +7,8 @@
  * Requires at least: 5.5
  * Tested up to: 6.8
  * Description: Adds an "Authorized only" meta field to attachments (visible in attachment edit screen and media modal) and manages a .htaccess rewrite section.
- * Version: 1.2.2
- * Stable Tag: 1.2.2
+ * Version: 1.2.3
+ * Stable Tag: 1.2.3
  * Author: Zodan (edited by ChatGPT)
  * Text Domain: z-authorized-downloads
  * License: GPLv2 or later
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Z_Authorized_Downloads {
 
     protected $plugin_name = 'z-authorized-downloads';
-    protected $version = '1.2.2';
+    protected $version = '1.2.3';
     const HTACCESS_MARKER = 'Z Authorized Downloads';
     const OPTION_KEY = 'z_auth_att_options';
     const PROTECTED_PAGE_SLUG = 'protected-downloads';
@@ -62,9 +62,12 @@ class Z_Authorized_Downloads {
 
     public function register_settings() {
         register_setting( self::OPTION_KEY, self::OPTION_KEY, array( $this, 'sanitize_options' ) );
-        add_settings_section( 'main_section', __( 'General Settings', 'z-authorized-downloads' ), '__return_false', self::OPTION_KEY );
+        add_settings_section( 'main_section', __( 'Global Settings', 'z-authorized-downloads' ), '__return_false', self::OPTION_KEY );
         add_settings_field( 'filetypes', __( 'Protected File Types (comma-separated)', 'z-authorized-downloads' ), array( $this, 'render_filetypes_field' ), self::OPTION_KEY, 'main_section' );
         add_settings_field( 'default_roles', __( 'Default Allowed Roles', 'z-authorized-downloads' ), array( $this, 'render_default_roles_field' ), self::OPTION_KEY, 'main_section' );
+        add_settings_section( 'help_section', __( 'Documentation', 'z-authorized-downloads' ), array( $this, 'render_settings_help_text' ), self::OPTION_KEY );
+        
+
     }
 
 	public static function add_plugin_settings_link( $links ) {
@@ -130,6 +133,24 @@ class Z_Authorized_Downloads {
         }
         echo '<p class="description">' . esc_html__( 'If no specific roles are set per file, only these roles will be allowed to download protected files.', 'z-authorized-downloads' ) . '</p>';
         echo '</fieldset>';
+    }
+
+    public function render_settings_help_text() {
+        echo '<p>' . esc_html__( 'The above settings are the global settings for all protected file types.', 'z-authorized-downloads' ) . '</p>';
+        echo '<p>' . esc_html__( 'The plugin will:', 'z-authorized-downloads' ) . '</p>';
+        echo '<ol class="z-auth-action-list">';
+        echo '<li>' . esc_html__( 'Automatically create a page called `Protected Downloads`.', 'z-authorized-downloads' ) . '</li>';
+        echo '<li>' . esc_html__( 'Create redirection rules in the .htaccess file of the site.', 'z-authorized-downloads' );
+        echo '<br>'. esc_html__( 'The file types you enter here are, using the .htaccess rules, all redirected to the Protected Downloads page.', 'z-authorized-downloads' );
+        echo '<br>'. esc_html__( 'This Protected Downloads page will then:', 'z-authorized-downloads' ) . '</li>';
+        echo '<li>' . esc_html__( 'Check if the requested file is marked as `Authorized Only` and', 'z-authorized-downloads' ) . '</li>';
+        echo '<li>' . esc_html__( 'Check if the user is logged in and ', 'z-authorized-downloads' ) . '</li>';
+        echo '<li>' . esc_html__( 'Check if the user has one of the User Roles that are set in the Global Settings or the settings of the specific document.', 'z-authorized-downloads' ) . '</li>';
+        echo '</ol>';
+        echo '<h3>' . esc_html__( 'How to mark a file as Authorized Only:', 'z-authorized-downloads' ) . '</h3>';
+        echo '<p>' . esc_html__( 'You can mark a file as `Authorized Only` in the details screen of each file/attachment in the media library', 'z-authorized-downloads' );
+        echo '<br>' . esc_html__( 'There, you can also set the permitted roles for that file, overriding the Default Allowed Roles.', 'z-authorized-downloads' ) . '</p>';
+
     }
 
 

@@ -15,6 +15,15 @@
 #adminmenu .current a[href*="?page=z-authorized-downloads"]:before {
     opacity: 0.9;
 }
+
+ol.z-auth-action-list {
+    list-style-type: lower-alpha;
+}
+.settings_page_z-authorized-downloads h3 {
+  font-size: 1.1em;
+  margin: 1.33em 0 1em 0;
+}
+
 .compat-field-z-authorized-downloads_document_download_needs_auth input {
     vertical-align: bottom;
 }

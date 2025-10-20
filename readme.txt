@@ -3,8 +3,8 @@ Contributors: zodannl, martenmoolenaar
 Tags: protected downloads, authorization, files, attachments, downloads
 Requires at least: 5.5
 Tested up to: 6.8
-Version: 1.2.2
-Stable tag: 1.2.2
+Version: 1.2.3
+Stable tag: 1.2.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -25,8 +25,9 @@ Adds an "Authorized only" meta field to attachments (visible in attachment edit 
 == Installation ==
 1. Upload the plugin files to `/wp-content/plugins/z-authorized-downloads/` or install via the Plugins screen.
 2. Activate the plugin through the 'Plugins' screen.
-3. Go to **Settings → Authorized Downloads** to set which file types should be protected.
+3. Go to **Settings → Authorized Downloads** to set which file types should be protected and which roles can download protected files
 4. Mark attachments as "Authorized only" in the Media Library to restrict access.
+5. Optionally, override the default permitted roles per attachment in the Media Library.
 
 
 == Frequently Asked Questions ==
@@ -45,16 +46,19 @@ No. The plugin will manage the `.htaccess` rules for you when you save settings.
 
 == Changelog ==
 
+= 1.2.3 =
+* Added help text on the settings page.
+
 = 1.2.2 =
-* Small adjustments to the rendering of the meta fields to have both versions (meta-box and modal) use the same code
+* Small adjustments to the rendering of the meta fields to have both versions (meta-box and modal) use the same code.
 
 = 1.2.1 =
 * Fixed Bug in handling the meta-box update function where changes were not saved correctly.
 
 = 1.2.0 =
-* Renamed plugin to Z Authorized Downloads
-* Added default Allowed roles to download files
-* Added file-specific Allowed roles to the media file meta-box
+* Renamed plugin to Z Authorized Downloads.
+* Added default Allowed roles to download files.
+* Added file-specific Allowed roles to the media file meta-box.
 
 = 1.1.1 =
 * Added settings page for specifying protected file types.

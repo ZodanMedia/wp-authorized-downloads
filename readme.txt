@@ -8,12 +8,10 @@ Stable tag: 1.2.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Protect documents from unauthorized direct download.
+Protect documents from unauthorized download.
 
 == Description ==
-This plugin allows site admins to protect specific attachment file types (e.g., PDF, DOCX) from direct access. Instead, the files are served through WordPress, allowing you to check if a user is logged in or has the required permissions before granting access.
-Adds an "Authorized only" meta field to attachments (visible in attachment edit screen and media modal) and manages a .htaccess rewrite section.
-
+This plugin allows site admins to protect specific attachment file types (e.g. Pdf, Doc(x)) from direct access. Instead, the files are served through WordPress, allowing you to check if a user is logged in or has the required permissions before granting access.
 
 **Features:**
 * Adds a checkbox to media attachments to mark them as "Authorized only".
@@ -35,19 +33,37 @@ Adds an "Authorized only" meta field to attachments (visible in attachment edit 
 = Can I customize the authorization logic? =
 Yes. The plugin checks if the user is logged in by default, but you can extend `handle_protected_request()` to add role checks or other conditions.
 
-
 = What happens to unprotected files? =
-Files that are not marked as "Authorized only" will still be accessible directly by URL.
-
+Files that are not marked as "Authorized only" will still be directly accessible by URL.
 
 = Do I need to manually edit .htaccess? =
 No. The plugin will manage the `.htaccess` rules for you when you save settings.
+
+= Do you have plans to improve the plugin? =
+We currently have on our roadmap:
+* Adding information to the media overview screen.
+* Make the plugin pluggable.
+* Adding a custom capability to manage which users can edit settings (both general and per file).
+* Adding more translations.
+
+If you have a feature suggestion, send us an email at [plugins@zodan.nl](plugins@zodan.nl).
+
+
+== Upgrade Notice ==
+= 1.1.1 =
+You must visit the settings page after upgrading to ensure `.htaccess` rules are regenerated with your chosen file types.
+
+
+== Screenshots ==
+1. Settings page where you define protected file types and user roles.
+2. Media modal showing the "Authorized only" checkbox.
 
 
 == Changelog ==
 
 = 1.2.3 =
 * Added help text on the settings page.
+* Added some screenshots.
 
 = 1.2.2 =
 * Small adjustments to the rendering of the meta fields to have both versions (meta-box and modal) use the same code.
@@ -68,105 +84,5 @@ No. The plugin will manage the `.htaccess` rules for you when you save settings.
 = 1.0.0 =
 * Initial release with meta box and basic rewrite rules.
 
-
-== Upgrade Notice ==
-= 1.1.1 =
-You must visit the settings page after upgrading to ensure `.htaccess` rules are regenerated with your chosen file types.
-
-
-== Screenshots ==
-1. Settings page where you define protected file types.
-2. Media modal showing the "Authorized only" checkbox.
-3. Example access denied screen when an unauthorized user attempts to access a file.
-
-
 == License ==
 This plugin is licensed under GPLv2 or later.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-== Installation ==
-
-= Install the plugin from within WordPress =
-
-1. Visit the plugins page within your dashboard and select ‘Add New’;
-1. Search for ‘Z Authorized Downloads’;
-1. Activate the plugin from your Plugins page;
-1. Go to ‘after activation’ below.
-
-= Install manually =
-
-1. Unzip the Z Authorized Downloads zip file
-2. Upload the unzipped folder to the /wp-content/plugins/ directory;
-3. Activate the plugin through the ‘Plugins’ menu in WordPress;
-4. Go to ‘after activation’ below.
-
-= After activation =
-
-1. On the Plugins page in WordPress you will see a 'settings' link below the plugin name;
-2. On the settings page, add the filetypes you want to be protected in a comma separated list, for example: .pdf,.doc,.docx,.zip
-3. Save your settings and you’re done!
-
-== Frequently Asked Questions ==
-
-= Can I add additional styling? =
-
-Yes you can. By adding custom styles in the WordPress customizer under /Appearance/Customize. The parent element of the button has the `.zLikeButton` class, the label containing the icon is styled using the `zLikeLabel` class.
-
-= Do you have plans to improve the plugin =
-
-Yes. We currently have on our roadmap:
-* Adding translations
-* Adding more features for both the button and the 'My liks list' (ordering in time, grouping by post type)
-* Adding option for minifying the assets
-
-== Screenshots ==
-
-1. Plugin settings
-2. Plugin default rendering
-3. Plugin metabox: you can remove the like button for any post or content individually and even cheat with you counters with manual editing :P
-
-
-== Changelog ==
-
-= 1.1.1 =
-* Added option to include/exclude not-logged-in users
-* Added option to remove likes directly from My Likes List
-* Refactoring
-
-= 1.1.0 =
-* Added option to include/exclude not-logged-in users
-* Added option to remove likes directly from My Likes List
-* Refactoring
-
-= 0.0.5 =
-* Added security improvements
-* Changed the wp_json_encoded output
-* Changed some function names to satisfy the plugin check
-
-= 0.0.4 =
-* Added color selection for the icons
-
-= 0.0.3 =
-* Added shortcode for a "My liked posts" overview
-
-= 0.0.2 =
-* Optimized validation, added icon selection
-
-= 0.0.1 =
-* Pre-release

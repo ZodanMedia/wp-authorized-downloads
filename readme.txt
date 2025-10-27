@@ -3,8 +3,8 @@ Contributors: zodannl, martenmoolenaar
 Tags: protected downloads, authorization, files, attachments, downloads
 Requires at least: 5.5
 Tested up to: 6.8
-Version: 1.2.3
-Stable tag: 1.2.3
+Version: 1.2.4
+Stable tag: 1.2.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -60,6 +60,9 @@ You must visit the settings page after upgrading to ensure `.htaccess` rules are
 
 
 == Changelog ==
+
+= 1.2.4 =
+* Updated sanitizing method for array of $_POST values to satisfy plugin check
 
 = 1.2.3 =
 * Added help text on the settings page.

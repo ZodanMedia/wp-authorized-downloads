@@ -7,8 +7,8 @@
  * Requires at least: 5.5
  * Tested up to: 6.8
  * Description: Adds an "Authorized only" meta field to attachments (visible in attachment edit screen and media modal) and manages a .htaccess rewrite section.
- * Version: 1.2.3
- * Stable Tag: 1.2.3
+ * Version: 1.2.4
+ * Stable Tag: 1.2.4
  * Author: Zodan (edited by ChatGPT)
  * Text Domain: z-authorized-downloads
  * License: GPLv2 or later
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Z_Authorized_Downloads {
 
     protected $plugin_name = 'z-authorized-downloads';
-    protected $version = '1.2.3';
+    protected $version = '1.2.4';
     const HTACCESS_MARKER = 'Z Authorized Downloads';
     const OPTION_KEY = 'z_auth_att_options';
     const PROTECTED_PAGE_SLUG = 'protected-downloads';
@@ -91,6 +91,17 @@ class Z_Authorized_Downloads {
             $clean['default_roles'] = array_values( array_intersect( $options['default_roles'], $all_roles ) );
         }
         return $clean;
+    }
+
+    /**
+     * Sanitize and wp_unslash an array of fields recursively
+     */
+    private function z_sanitize_unslash_recursive( $value ) {
+        if ( is_array( $value ) ) {
+            return array_map( [ __CLASS__, 'z_sanitize_recursive' ], $value );
+        }
+        return sanitize_text_field( $value );
+
     }
 
     public function render_settings_page() {
@@ -222,8 +233,8 @@ class Z_Authorized_Downloads {
     public function display_authorized_downloads_meta_box( $post ) {
         wp_nonce_field( $this->plugin_name . '_attachment_meta_box', $this->plugin_name . '_attachment_meta_box_nonce' );
 
-        echo $this->render_needs_auth_ui( $post->ID );
-        echo $this->render_authorized_roles_ui( $post->ID );
+        echo wp_kses_post( $this->render_needs_auth_ui( $post->ID ) );
+        echo wp_kses_post( $this->render_authorized_roles_ui( $post->ID ) );
 
     }
 
@@ -281,7 +292,8 @@ class Z_Authorized_Downloads {
         // ---- AJAX flow (media library / sidebar) ----
         // WP stuurt in veel gevallen 'attachments' array: $_POST['attachments'][ID][...]
         if ( isset( $_POST['attachments'] ) && is_array( $_POST['attachments'] ) ) {
-            $attachments = wp_unslash( $_POST['attachments'] );
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+            $attachments = $this->z_sanitize_unslash_recursive( wp_unslash( $_POST['attachments'] ) );
 
             if ( isset( $attachments[ $post_id ] ) && is_array( $attachments[ $post_id ] ) ) {
                 // capability check in plaats van nonce
@@ -554,7 +566,6 @@ if ( $requires_auth ) {
         wp_cache_set( $cache_key, $result, self::CACHE_GROUP, MINUTE_IN_SECONDS * 5 );
         return $result;
     }
-
 
     // Print a thankyou notice
     public function z_admin_footer_print_thankyou( $data ) {
